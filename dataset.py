@@ -22,29 +22,30 @@ with FaceLandmarker.create_from_options(options) as landmarker:
     for image in os.listdir(f"data/"):
 
         img = mp.Image.create_from_file(f"data/{image}")
-        face_landmarker = landmarker.detect(img)
-        face_landmarks = face_landmarker.face_landmarks[0]
 
-        r_rx, r_ry = relative_position(
-            face_landmarks[landmarks[0]],
-            face_landmarks[landmarks[1]],
-            face_landmarks[landmarks[2]],
-            face_landmarks[landmarks[3]],
-            face_landmarks[landmarks[4]],
-            640, 480
-        )
+        if landmarker.detect(img):
 
-        l_rx, l_ry = relative_position(
-            face_landmarks[landmarks[5]],
-            face_landmarks[landmarks[6]],
-            face_landmarks[landmarks[7]],
-            face_landmarks[landmarks[8]],
-            face_landmarks[landmarks[9]],
-            640, 480
-        )
+            face_landmarker = landmarker.detect(img)
+            face_landmarks = face_landmarker.face_landmarks[0]
 
-        features.append([r_rx, r_ry, l_rx, l_ry])
-        labels.append(image.split("_")[1])
+            r_rx, r_ry = relative_position(
+                face_landmarks[landmarks[0]],
+                face_landmarks[landmarks[1]],
+                face_landmarks[landmarks[2]],
+                face_landmarks[landmarks[3]],
+                face_landmarks[landmarks[4]]
+            )
+
+            l_rx, l_ry = relative_position(
+                face_landmarks[landmarks[5]],
+                face_landmarks[landmarks[6]],
+                face_landmarks[landmarks[7]],
+                face_landmarks[landmarks[8]],
+                face_landmarks[landmarks[9]]
+            )
+
+            features.append([r_rx, r_ry, l_rx, l_ry])
+            labels.append(image.split("_")[1])
 
     columns = []
     columns.extend([f"right_relative_x", "right_relative_y", "left_relative_x", "left_relative_y"])

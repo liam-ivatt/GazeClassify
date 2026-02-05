@@ -24,7 +24,7 @@ class_names = ["left", "centre", "right"]
 def capture_images(images_per_point, class_names):
 
     #Capture images
-    for img_id in range(images_per_point):
+    for img_id in range(100, 200):
 
         screen.fill("white")
         pygame.draw.circle(screen, "green", pos, 40)
