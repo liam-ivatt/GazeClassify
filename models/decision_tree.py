@@ -20,18 +20,19 @@ def hyperparameter_tuning(x_train, y_train):
     grid_search.fit(x_train, y_train)
     print(grid_search.best_params_)
 
-def train_model(x_train, y_train, x_test, y_test):
+    return grid_search.best_params_
+
+def train_model(x_train, y_train, x_test, y_test, params):
 
     dt = DecisionTreeClassifier(
-        random_state=20,
-        max_depth=7,
-        min_samples_split=5,
-        min_samples_leaf=2,
-        criterion='gini', )
+        criterion=params['criterion'],
+        max_depth=params['max_depth'],
+        min_samples_split=params['min_samples_split'],
+        min_samples_leaf = params['min_samples_leaf'])
 
     dt.fit(x_train, y_train)
 
-    with open('../prediction_models/dtree.pkl', 'wb') as f:
+    with open('prediction_models/dtree.pkl', 'wb') as f:
         pickle.dump(dt, f)
 
     y_pred = dt.predict(x_test)
@@ -49,18 +50,10 @@ def train_model(x_train, y_train, x_test, y_test):
     plt.title("Confusion Matrix - Decision Tree")
     plt.show()
 
-def main():
+def main(x_train, y_train, x_test, y_test):
 
-    data = pd.read_csv("../dataset.csv", index_col=False)
-    x = data.drop(["label"], axis=1).to_numpy()
-    y = data["label"]
-
-    x_train, x_test, y_train, y_test = train_test_split(
-        x, y, test_size=0.2, random_state=20
-    )
-
-    # hyperparameter_tuning(x_train, y_train)
-    train_model(x_train, y_train, x_test, y_test)
+    params = hyperparameter_tuning(x_train, y_train)
+    train_model(x_train, y_train, x_test, y_test, params)
 
 if __name__ == '__main__':
     main()

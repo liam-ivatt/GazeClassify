@@ -19,16 +19,21 @@ def hyperparameter_tuning(x_train, y_train):
     grid_search = GridSearchCV(RandomForestClassifier(), param_grid=param_grid, cv=kf, scoring='accuracy', n_jobs=-1)
 
     grid_search.fit(x_train, y_train)
-    print(grid_search.best_params_)
-    print(grid_search.cv_results_)
 
-def train_model(x_train, y_train, x_test, y_test):
+    return grid_search.best_params_
+
+def train_model(x_train, y_train, x_test, y_test, params):
 
     rf = RandomForestClassifier(
-        random_state=20,
-        max_depth=3, )
+        n_estimators=params['n_estimators'],
+        max_depth=params['max_depth'],
+        min_samples_split=params['min_samples_split'],
+        min_samples_leaf=params['min_samples_leaf'],
+        criterion=params['criterion'],)
 
-    with open('../prediction_models/random_forest.pkl', 'wb') as f:
+    rf.fit(x_train, y_train)
+
+    with open('prediction_models/random_forest.pkl', 'wb') as f:
         pickle.dump(rf, f)
 
     y_pred = rf.predict(x_test)
@@ -40,21 +45,11 @@ def train_model(x_train, y_train, x_test, y_test):
         colorbar=True
     )
 
-    plt.title("Confusion Matrix - Decision Tree")
+    plt.title("Confusion Matrix - Random Forest")
     plt.show()
 
-def main():
+def main(x_train, y_train, x_test, y_test):
 
-    data = pd.read_csv("../dataset.csv")
-    x = data.drop(["label"], axis=1).to_numpy()
-    y = data["label"]
-
-    x_train, x_test, y_train, y_test = train_test_split(
-        x, y, test_size=0.2, random_state=20
-    )
-
-    hyperparameter_tuning(x_train, y_train)
-
-if __name__ == '__main__':
-    main()
+    params = hyperparameter_tuning(x_train, y_train)
+    train_model(x_train, y_train, x_test, y_test, params)
 
