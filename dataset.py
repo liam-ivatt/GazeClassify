@@ -1,31 +1,24 @@
 import os
 import mediapipe as mp
 import pandas as pd
-from GazeClassify import relative_position, landmarks
+from GazeClassify import relative_position, landmarks, GazeClassifier
 
-def main():
-    BaseOptions = mp.tasks.BaseOptions
-    FaceLandmarker = mp.tasks.vision.FaceLandmarker
-    FaceLandmarkerOptions = mp.tasks.vision.FaceLandmarkerOptions
-    VisionRunningMode = mp.tasks.vision.RunningMode
+def main(image_path):
 
-    options = FaceLandmarkerOptions(
-        base_options=BaseOptions(model_asset_path="landmark_model/face_landmarker.task"),
-        running_mode=VisionRunningMode.IMAGE)
+    classifier = GazeClassifier()
 
-    with FaceLandmarker.create_from_options(options) as landmarker:
+    # Dataset rows
+    features = []
+    labels = []
+    participants = []
 
-        # Dataset rows
-        features = []
-        names = []
-        labels = []
+    for participant in os.listdir(f"{image_path}"):
+        for image in os.listdir(f"{image_path}/{participant}"):
+            img = mp.Image.create_from_file(f"{image_path}/{participant}/{image}")
+            face_landmarker = classifier.landmarker.detect(img)
 
-        for image in os.listdir(f"data/"):
+            if face_landmarker.face_landmarks:
 
-            img = mp.Image.create_from_file(f"data/{image}")
-
-            if landmarker.detect(img):
-                face_landmarker = landmarker.detect(img)
                 face_landmarks = face_landmarker.face_landmarks[0]
 
                 r_rx, r_ry = relative_position(
@@ -46,17 +39,15 @@ def main():
 
                 features.append([r_rx, r_ry, l_rx, l_ry])
                 labels.append(image.split("_")[1])
+                participants.append(participant)
 
-        columns = []
-        columns.extend([f"right_relative_x", "right_relative_y", "left_relative_x", "left_relative_y"])
+        columns = ["right_relative_x", "right_relative_y", "left_relative_x", "left_relative_y"]
 
         df = pd.DataFrame(features, columns=columns)
         df["label"] = labels
+        df["participant"] = participants
 
-        df.to_csv("dataset.csv", index=False)
-
-if __name__ == "__main__":
-    main()
+        df.to_csv(f"data/dataset_test_logo.csv", index=False)
 
 
 

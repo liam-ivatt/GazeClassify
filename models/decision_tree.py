@@ -1,5 +1,7 @@
+import joblib
 import pandas as pd
-import sklearn.metrics as metrics
+from sklearn.metrics import ConfusionMatrixDisplay, classification_report
+from sklearn.preprocessing import LabelEncoder
 from sklearn.tree import DecisionTreeClassifier, plot_tree
 from sklearn.model_selection import KFold, GridSearchCV, train_test_split
 import matplotlib.pyplot as plt
@@ -31,30 +33,87 @@ def train_model(x_train, y_train, x_test, y_test, params):
         min_samples_leaf = params['min_samples_leaf'])
 
     dt.fit(x_train, y_train)
-
-    with open('prediction_models/dtree.pkl', 'wb') as f:
-        pickle.dump(dt, f)
-
     y_pred = dt.predict(x_test)
 
     plot_tree(dt)
     plt.show()
 
-    metrics.ConfusionMatrixDisplay.from_predictions(
+    ConfusionMatrixDisplay.from_predictions(
         y_test,
         y_pred,
         cmap='Blues',
         colorbar=True
     )
 
+    report = classification_report(y_test, y_pred, output_dict=True)
+    df = pd.DataFrame.from_dict(report)
+    df.to_csv('evaluation/dt_report.csv')
+
+    plt.title("Confusion Matrix - Decision Tree")
+    plt.show()
+
+    return dt
+
+def one_participant_out(params):
+
+    df = pd.read_csv("data/dataset_test_logo.csv")
+    features = ["right_relative_x", "right_relative_y", "left_relative_x", "left_relative_y"]
+
+    le = LabelEncoder()
+    df["label"] = le.fit_transform(df["label"])
+
+    per_participant = []
+    all_y_test = []
+    all_y_pred = []
+
+    for participant in df["participant"].unique():
+        test = df[df["participant"] == participant]
+        train = df[df["participant"] != participant]
+
+        X_train = train[features].values
+        y_train = train["label"].values
+        X_test = test[features].values
+        y_test = test["label"].values
+
+        dt = DecisionTreeClassifier(
+            criterion=params['criterion'],
+            max_depth=params['max_depth'],
+            min_samples_split=params['min_samples_split'],
+            min_samples_leaf = params['min_samples_leaf']
+        )
+        dt.fit(X_train, y_train)
+        y_pred = dt.predict(X_test)
+
+        all_y_test.extend(y_test)
+        all_y_pred.extend(y_pred)
+
+        report = classification_report(y_test, y_pred, target_names=le.classes_, output_dict=True)
+        df_report = pd.DataFrame.from_dict(report).transpose()
+        df_report['participant'] = participant
+        per_participant.append(df_report)
+
+    joblib.dump(dt, "prediction_models/dt.mdl")
+
+    agg_report = classification_report(all_y_test, all_y_pred, target_names=le.classes_, output_dict=True)
+    df_agg = pd.DataFrame.from_dict(agg_report).transpose()
+    df_agg['participant'] = 'aggregate'
+
+    df_all = pd.concat([*per_participant, df_agg])
+    df_all.index.name = 'class'
+    df_all = df_all.reset_index().set_index(['participant', 'class'])
+    df_all.to_csv('evaluation/dt_logo_report.csv')
+
+    ConfusionMatrixDisplay.from_predictions(
+        all_y_test, all_y_pred,
+        display_labels=le.classes_,
+        cmap='Blues', colorbar=True
+    )
     plt.title("Confusion Matrix - Decision Tree")
     plt.show()
 
 def main(x_train, y_train, x_test, y_test):
 
     params = hyperparameter_tuning(x_train, y_train)
-    train_model(x_train, y_train, x_test, y_test, params)
-
-if __name__ == '__main__':
-    main()
+    one_participant_out(params)
+    # train_model(x_train, y_train, x_test, y_test, params)
 

@@ -1,44 +1,80 @@
-import math
+import pickle
 import random
 import sys
-
+import cv2
+import pandas as pd
 import pygame
 
-pygame.init()
+from GazeClassify import relative_position, GazeClassifier
 
-screen = pygame.display.set_mode((1920, 1080))
+model = pickle.load(open("prediction_models/random_forest.pkl", "rb"))
+
 clock = pygame.time.Clock()
-running = True
+capture = cv2.VideoCapture(0)
 
-def draw_divider():
-    pygame.draw.rect(screen, (0, 0, 0), [screen.get_width() / 2, 0, 1, screen.get_height()])
+if not capture.isOpened():
+    print("Could not open camera")
+    pygame.quit()
 
-while running:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
+def run_experiment(model_path=None):
 
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_q:
-                running = False
-
-    # Draw blank screen with divider
-    screen.fill("white")
-    draw_divider()
-    pygame.display.flip()
-    pygame.time.wait(1000)
-
-    shape_location = random.randrange(1, 10)
-
-    if shape_location < 5:
-        pygame.draw.rect(screen, (0, 0, 0), [screen.get_width() / 4, screen.get_height() / 2, 100, 100])
+    if model_path is None:
+        classifier = GazeClassifier("prediction_models/random_forest.pkl")
     else:
-        pygame.draw.rect(screen, (0, 0, 0), [screen.get_width() * 3 / 4, screen.get_height() / 2, 100, 100])
+        classifier = GazeClassifier(model_path)
 
-    pygame.display.flip()
-    pygame.time.wait(1000)
+    # Use existing pygame window
+    pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+    screen = pygame.display.get_surface()
+    running = True
+    results = []
+    frame_count = 1
 
-    clock.tick(60)
+    while running and frame_count < 11:
 
-pygame.quit()
-sys.exit()
+        for event in pygame.event.get():
+
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_q:
+                    running = False
+
+        # Blank screen
+        screen.fill("white")
+
+        pygame.display.flip()
+        pygame.time.wait(1000)
+
+        shape_location = random.choice(["left", "centre", "right"])
+
+        # Left side
+        if shape_location == "left":
+            pygame.draw.rect(screen,(0, 0, 0),[screen.get_width() / 4 - 50, screen.get_height() / 2 - 50, 100, 100])
+        # Right side
+        elif shape_location == "right":
+            pygame.draw.rect(screen,(0, 0, 0),[screen.get_width() * 3 / 4 - 50, screen.get_height() / 2 - 50, 100, 100])
+        else:
+            pygame.draw.rect(screen, (0, 0, 0),[screen.get_width() / 2 - 50, screen.get_height() / 2 - 50, 100, 100])
+
+        pygame.display.flip()
+        pygame.time.wait(1000)
+
+        ret, frame = capture.read()
+        if ret:
+            processed_frame = classifier.process_frame(frame)
+
+            if processed_frame is not None:
+                result = model.predict(processed_frame)
+                results.append([frame_count, shape_location, result])
+            frame_count += 1
+        pygame.time.wait(1000)
+
+        clock.tick(60)
+
+    df = pd.DataFrame(results, columns=['frame', 'true_region', 'prediction'])
+    df.to_csv("results/results.csv")
+
+

@@ -1,5 +1,5 @@
 import pandas as pd
-from sklearn.cluster import KMeans
+from sklearn.cluster import AgglomerativeClustering
 from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 import numpy as np
@@ -11,8 +11,8 @@ def main(data):
     features = data.drop(["label"], axis=1).to_numpy()
 
     # K-Means with 3 clusters
-    kmeans = KMeans(n_clusters=3, random_state=42)
-    clusters = kmeans.fit_predict(features)
+    agglomerative = AgglomerativeClustering()
+    clusters = agglomerative.fit_predict(features)
 
     print("Cluster distribution:", np.bincount(clusters))
 
@@ -21,18 +21,18 @@ def main(data):
     features_pca = pca.fit_transform(features)
 
     report = {
-        "ari": adjusted_rand_score(labels, kmeans.labels_),
-        "sil": silhouette_score(features, kmeans.labels_),
+        "ari": adjusted_rand_score(labels, agglomerative.labels_),
+        "sil": silhouette_score(features, agglomerative.labels_),
     }
 
     df = pd.DataFrame.from_dict(report, orient='index')
-    df.to_csv('evaluation/kmeans_report.csv')
+    df.to_csv('evaluation/agglomerative_report.csv')
 
     plt.figure(figsize=(12, 5))
 
     plt.subplot(1, 2, 1)
     plt.scatter(features_pca[:, 0], features_pca[:, 1], c=clusters, cmap='viridis')
-    plt.title('K-Means Clustering')
+    plt.title('Agglomerative Clustering')
     plt.xlabel('PC1')
     plt.ylabel('PC2')
 
