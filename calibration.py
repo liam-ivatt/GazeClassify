@@ -9,13 +9,6 @@ from GazeClassify import GazeClassifier
 # IMPORT MODEL
 from models.random_forest import main as rf
 
-# OpenCV setup
-capture = cv2.VideoCapture(0)
-if not capture.isOpened():
-    print("Could not open camera")
-    pygame.quit()
-    exit()
-
 # Capture setup
 class_names = ["left", "centre", "right"]
 results = []
@@ -41,7 +34,7 @@ def train_models(dataset, self_training):
         joblib.dump(model, model_path)
     return model_path
 
-def capture_images(class_names, pos_id, pos):
+def capture_images(capture, class_names, pos_id, pos):
 
     screen = pygame.display.get_surface()
 
@@ -63,7 +56,7 @@ def capture_images(class_names, pos_id, pos):
 
     return None
 
-def model_trainer():
+def model_trainer(capture):
 
     screen = pygame.display.get_surface()
 
@@ -90,7 +83,7 @@ def model_trainer():
 
         time.sleep(1)
 
-        capture_images(class_names, pos_id, pos)
+        capture_images(capture, class_names, pos_id, pos)
 
         screen.fill("white")
         pygame.draw.circle(screen, "red", pos, 40)

@@ -47,6 +47,7 @@ def show_message(message, time=1000):
 def get_camera(x_offset=0, y_offset=0):
     ret, frame = capture.read()
     if ret:
+        screen = pygame.display.get_surface()
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         frame = frame.swapaxes(0, 1)
         webcam_surface = pygame.surfarray.make_surface(frame)
@@ -153,7 +154,8 @@ def start_experiment():
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if start_button.collidepoint(mouse):
                     show_message("Experiment beginning shortly")
-                    run_experiment()
+                    run_experiment(capture)
+                    fullscreen()
                     show_results()
                     return
                 if exit_button.collidepoint(mouse):
@@ -200,11 +202,11 @@ def start_self_training():
 
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if start_button.collidepoint(mouse):
-                    data = model_trainer()
+                    data = model_trainer(capture)
                     show_message("Training models...")
                     model_path = train_models(data, True)
                     show_message("Experiment beginning shortly")
-                    run_experiment(model_path)
+                    run_experiment(capture, model_path)
                     show_results()
                     return
 
@@ -252,12 +254,12 @@ def start_calibration():
 
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if start_button.collidepoint(mouse):
-                    data = model_trainer()
+                    data = model_trainer(capture)
                     dataset = pd.concat([data, pd.read_csv("data/dataset_test_logo.csv").drop(columns=["participant"])], ignore_index=True)
                     show_message("Training model...")
                     model_path = train_models(dataset, False)
                     show_message("Experiment beginning shortly")
-                    run_experiment(model_path)
+                    run_experiment(capture, model_path)
                     show_results()
                     return
 
@@ -365,7 +367,7 @@ def show_results():
         acc = font.render(f"Accuracy: {last_accuracy:.1f}%", True, BLACK)
         screen.blit(acc, acc.get_rect(center=(width // 2, height // 2)))
 
-        draw_button(quit_button, "Back to Menu", quit_button.collidepoint(mouse))
+        draw_button(quit_button, "Return to Menu", quit_button.collidepoint(mouse))
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -373,8 +375,9 @@ def show_results():
                 sys.exit()
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if quit_button.collidepoint(mouse):
-                    pygame.quit()
-                    sys.exit()
+                    # pygame.quit()
+                    # sys.exit()
+                    return
 
         pygame.display.update()
 

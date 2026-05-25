@@ -7,18 +7,13 @@ import pygame
 from GazeClassify import GazeClassifier
 
 clock = pygame.time.Clock()
-capture = cv2.VideoCapture(0)
 gaze_map = {
     0:"centre",
     1:"left",
     2:"right",
 }
 
-if not capture.isOpened():
-    print("Could not open camera")
-    pygame.quit()
-
-def run_experiment(model_path=None):
+def run_experiment(capture, model_path=None):
 
     if model_path is None:
         classifier = GazeClassifier("prediction_models/rf.mdl")
