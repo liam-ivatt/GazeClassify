@@ -1,6 +1,5 @@
-import pickle
-
 import cv2
+import joblib
 import mediapipe as mp
 
 # Iris center landmarks
@@ -33,9 +32,9 @@ landmarks = [RIGHT_IRIS_CENTER,
 
 class GazeClassifier:
 
-    def __init__(self, model=None):
+    def __init__(self, model=None, num_faces=None):
         if model:
-            self.model = pickle.load(open(model, 'rb'))
+            self.model = joblib.load(model)
 
         BaseOptions = mp.tasks.BaseOptions
         FaceLandmarker = mp.tasks.vision.FaceLandmarker
@@ -44,7 +43,9 @@ class GazeClassifier:
 
         options = FaceLandmarkerOptions(
             base_options=BaseOptions(model_asset_path="C:/Users/User/PycharmProjects/GazeClassify/landmark_model/face_landmarker.task"),
-            running_mode=VisionRunningMode.IMAGE)
+            running_mode=VisionRunningMode.IMAGE,
+            num_faces=num_faces if num_faces else 1
+        )
 
         self.landmarker = FaceLandmarker.create_from_options(options)
 

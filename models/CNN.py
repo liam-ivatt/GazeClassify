@@ -2,8 +2,8 @@ import os
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
-from keras.layers import Input, Conv2D, MaxPooling2D, Dense, Dropout, Flatten, Rescaling
-from keras.models import Model, Sequential
+from keras.layers import Conv2D, MaxPooling2D, Dense, Dropout, Flatten, Rescaling
+from keras.models import Sequential
 from keras.src.callbacks import EarlyStopping
 from keras.utils import image_dataset_from_directory
 from sklearn.metrics import classification_report, ConfusionMatrixDisplay
@@ -73,14 +73,14 @@ def process_folder(input, output):
             cv2.imwrite(save_path, cv2.cvtColor(processed_image, cv2.COLOR_RGB2BGR))
 
 train_ds = image_dataset_from_directory(
-    "C:/Users/User/PycharmProjects/GazeClassify/data/self_test_data/cnn_preprocessing/cnn_train",
+    "../data/cnn",
     seed=20,
     image_size=(128, 256),
     batch_size=32,
 )
 
 val_ds = image_dataset_from_directory(
-    "C:/Users/User/PycharmProjects/GazeClassify/data/self_test_data/cnn_preprocessing/cnn_validation",
+    "../data/cnn",
     image_size=(128, 256),
     batch_size=32,
     shuffle=False,
@@ -155,7 +155,3 @@ plt.plot(epochs_range, val_loss, label='Validation Loss')
 plt.legend(loc='upper right')
 plt.title('Training and Validation Loss')
 plt.show()
-
-
-
-

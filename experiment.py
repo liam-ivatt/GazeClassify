@@ -1,16 +1,18 @@
-import pickle
+import joblib
 import random
 import sys
 import cv2
 import pandas as pd
 import pygame
-
-from GazeClassify import relative_position, GazeClassifier
-
-model = pickle.load(open("prediction_models/random_forest.pkl", "rb"))
+from GazeClassify import GazeClassifier
 
 clock = pygame.time.Clock()
 capture = cv2.VideoCapture(0)
+gaze_map = {
+    0:"centre",
+    1:"left",
+    2:"right",
+}
 
 if not capture.isOpened():
     print("Could not open camera")
@@ -19,11 +21,10 @@ if not capture.isOpened():
 def run_experiment(model_path=None):
 
     if model_path is None:
-        classifier = GazeClassifier("prediction_models/random_forest.pkl")
+        classifier = GazeClassifier("prediction_models/rf.mdl")
     else:
         classifier = GazeClassifier(model_path)
 
-    # Use existing pygame window
     pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
     screen = pygame.display.get_surface()
     running = True
@@ -42,7 +43,6 @@ def run_experiment(model_path=None):
                 if event.key == pygame.K_q:
                     running = False
 
-        # Blank screen
         screen.fill("white")
 
         pygame.display.flip()
@@ -50,10 +50,8 @@ def run_experiment(model_path=None):
 
         shape_location = random.choice(["left", "centre", "right"])
 
-        # Left side
         if shape_location == "left":
             pygame.draw.rect(screen,(0, 0, 0),[screen.get_width() / 4 - 50, screen.get_height() / 2 - 50, 100, 100])
-        # Right side
         elif shape_location == "right":
             pygame.draw.rect(screen,(0, 0, 0),[screen.get_width() * 3 / 4 - 50, screen.get_height() / 2 - 50, 100, 100])
         else:
@@ -67,14 +65,18 @@ def run_experiment(model_path=None):
             processed_frame = classifier.process_frame(frame)
 
             if processed_frame is not None:
-                result = model.predict(processed_frame)
-                results.append([frame_count, shape_location, result])
+                result = classifier.predict(processed_frame)
+                result = result[0]
+                pred_label = result if isinstance(result, str) else gaze_map[int(result)]
+                results.append([frame_count, shape_location, pred_label])
             frame_count += 1
         pygame.time.wait(1000)
 
         clock.tick(60)
 
     df = pd.DataFrame(results, columns=['frame', 'true_region', 'prediction'])
+    accuracy = (df['true_region'] == df['prediction']).mean() * 100
+    df["accuracy"] = accuracy
     df.to_csv("results/results.csv")
 
 

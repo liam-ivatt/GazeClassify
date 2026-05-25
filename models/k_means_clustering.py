@@ -8,7 +8,7 @@ from sklearn.metrics import adjusted_rand_score, silhouette_score
 def main(data):
 
     labels = data["label"]
-    features = data.drop(["label"], axis=1).to_numpy()
+    features = data.drop(["label", "participant"], axis=1).to_numpy()
 
     # K-Means with 3 clusters
     kmeans = KMeans(n_clusters=3, random_state=42)

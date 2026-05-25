@@ -7,7 +7,6 @@ def main(image_path):
 
     classifier = GazeClassifier()
 
-    # Dataset rows
     features = []
     labels = []
     participants = []
@@ -48,11 +47,3 @@ def main(image_path):
         df["participant"] = participants
 
         df.to_csv(f"data/dataset_test_logo.csv", index=False)
-
-
-
-
-
-
-
-

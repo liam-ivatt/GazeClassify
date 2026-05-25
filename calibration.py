@@ -1,20 +1,13 @@
-import pickle
-
 import pandas as pd
 import pygame
 import cv2
 import time
+import joblib
 from sklearn.model_selection import train_test_split
 from GazeClassify import GazeClassifier
 
 # IMPORT MODEL
-from models.mlp import main as mlp
-
-# Pygame setup
-pygame.init()
-screen = pygame.display.set_mode((1920, 1080))
-screen.fill("white")
-running = True
+from models.random_forest import main as rf
 
 # OpenCV setup
 capture = cv2.VideoCapture(0)
@@ -38,25 +31,24 @@ def train_models(dataset, self_training):
         x, y, test_size=0.3, random_state=20
     )
 
-    model = mlp(x_train, y_train, x_test, y_test)
+    model = rf(x_train, y_train, x_test, y_test)
 
     if self_training:
         model_path = "self_training/custom_model.pkl"
-        with open(model_path, "wb") as f:
-            pickle.dump(model, f)
+        joblib.dump(model, model_path)
     else:
         model_path = "calibrated_model/custom_model.pkl"
-        with open(model_path, "wb") as f:
-            pickle.dump(model, f)
-
+        joblib.dump(model, model_path)
     return model_path
 
 def capture_images(class_names, pos_id, pos):
 
+    screen = pygame.display.get_surface()
+
     # Capture images
     for id in range(0, 100):
 
-        screen.fill("black")
+        screen.fill("white")
         pygame.draw.circle(screen, "green", pos, 40)
         pygame.display.flip()
 
@@ -68,11 +60,12 @@ def capture_images(class_names, pos_id, pos):
                 processed_image = processed_image[0]
                 processed_image.append(class_names[pos_id])
                 results.append(processed_image)
-        if not running:
-            return False
+
     return None
 
 def model_trainer():
+
+    screen = pygame.display.get_surface()
 
     start_pos = pygame.Vector2(screen.get_width() / 6, screen.get_height() / 2)
     centre_pos = pygame.Vector2(screen.get_width() / 2, screen.get_height() / 2)
@@ -87,14 +80,11 @@ def model_trainer():
     screen.blit(intro_text, (screen.get_width() / 2 - intro_text.get_width() / 2,
                              screen.get_height() / 2 - intro_text.get_height() / 2))
     pygame.display.flip()
-    pygame.time.wait(2000)
-
-    if not running:
-        return False
+    pygame.time.wait(3000)
 
     for pos_id, pos in enumerate(positions):
 
-        # Draw circle
+        screen.fill("white")
         pygame.draw.circle(screen, "red", pos, 40)
         pygame.display.flip()
 
@@ -102,7 +92,7 @@ def model_trainer():
 
         capture_images(class_names, pos_id, pos)
 
-        screen.fill("black")
+        screen.fill("white")
         pygame.draw.circle(screen, "red", pos, 40)
         pygame.display.flip()
 
