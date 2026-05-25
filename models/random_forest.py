@@ -1,20 +1,18 @@
 import joblib
 import pandas as pd
-from sklearn.metrics import ConfusionMatrixDisplay, classification_report
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import KFold, GridSearchCV, train_test_split
 import matplotlib.pyplot as plt
-import pickle
-
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import ConfusionMatrixDisplay, classification_report
+from sklearn.model_selection import KFold, GridSearchCV
 from sklearn.preprocessing import LabelEncoder
 
 
 def hyperparameter_tuning(x_train, y_train):
 
     param_grid = {
-        'n_estimators': [50, 100, 150, 200],
+        'n_estimators': [50, 100, 150],
         'criterion': ['gini', 'entropy'],
-        'max_depth': [3, 5, 7],
+        'max_depth': [5, 7],
         'min_samples_split': [2, 3],
         'min_samples_leaf': [1, 2]
     }
@@ -23,6 +21,7 @@ def hyperparameter_tuning(x_train, y_train):
     grid_search = GridSearchCV(RandomForestClassifier(), param_grid=param_grid, cv=kf, scoring='accuracy', n_jobs=-1)
 
     grid_search.fit(x_train, y_train)
+    print(grid_search.best_params_)
 
     return grid_search.best_params_
 
@@ -36,29 +35,17 @@ def train_model(x_train, y_train, x_test, y_test, params):
         criterion=params['criterion'],)
 
     rf.fit(x_train, y_train)
-
-    with open('prediction_models/random_forest.pkl', 'wb') as f:
-        pickle.dump(rf, f)
-
     y_pred = rf.predict(x_test)
-
-    disp = ConfusionMatrixDisplay.from_predictions(
-        y_test,
-        y_pred,
-        cmap='Blues',
-        colorbar=True
-    )
-
-    plt.title("Confusion Matrix - Random Forest")
-    plt.show()
 
     report = classification_report(y_test, y_pred, output_dict=True)
     df = pd.DataFrame.from_dict(report)
     df.to_csv('evaluation/rf_report.csv')
 
-def one_participant_out(params):
+    return rf
 
-    df = pd.read_csv("data/dataset_test_logo.csv")
+def one_participant_out():
+
+    df = pd.read_csv("../data/dataset_test_logo.csv")
     features = ["right_relative_x", "right_relative_y", "left_relative_x", "left_relative_y"]
 
     le = LabelEncoder()
@@ -67,6 +54,9 @@ def one_participant_out(params):
     per_participant = []
     all_y_test = []
     all_y_pred = []
+
+    X = df[features]
+    y = df["label"]
 
     for participant in df["participant"].unique():
         test = df[df["participant"] == participant]
@@ -77,12 +67,15 @@ def one_participant_out(params):
         X_test = test[features].values
         y_test = test["label"].values
 
+        params = hyperparameter_tuning(X_train, y_train)
+
         rf = RandomForestClassifier(
             n_estimators=params['n_estimators'],
             max_depth=params['max_depth'],
             min_samples_split=params['min_samples_split'],
             min_samples_leaf=params['min_samples_leaf'],
-            criterion=params['criterion'], )
+            criterion=params['criterion'],
+        )
 
         rf.fit(X_train, y_train)
         y_pred = rf.predict(X_test)
@@ -95,6 +88,16 @@ def one_participant_out(params):
         df_report['participant'] = participant
         per_participant.append(df_report)
 
+
+    rf = RandomForestClassifier(
+        n_estimators=params['n_estimators'],
+        max_depth=params['max_depth'],
+        min_samples_split=params['min_samples_split'],
+        min_samples_leaf=params['min_samples_leaf'],
+        criterion=params['criterion'],
+    )
+
+    rf.fit(X, y)
     joblib.dump(rf, "prediction_models/rf.mdl")
 
     agg_report = classification_report(all_y_test, all_y_pred, target_names=le.classes_, output_dict=True)
@@ -116,6 +119,6 @@ def one_participant_out(params):
 
 def main(x_train, y_train, x_test, y_test):
 
+    # one_participant_out()
     params = hyperparameter_tuning(x_train, y_train)
-    one_participant_out(params)
-    # train_model(x_train, y_train, x_test, y_test, params)
+    return train_model(x_train, y_train, x_test, y_test, params)
