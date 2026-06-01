@@ -15,6 +15,17 @@ BUTTON_HEIGHT = 70
 screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
 pygame.display.set_caption("IvattGaze - Third Year Project")
 
+landmarks = [
+    # Iris centres
+    468, 473,
+
+    # Right eye
+    33, 133, 159, 145,
+
+    # Left eye
+    362, 263, 386, 374
+]
+
 # Colors
 BG = (30, 30, 30)
 WHITE = (255, 255, 255)
@@ -79,7 +90,7 @@ def experiment_menu():
         mouse = pygame.mouse.get_pos()
 
         # Title
-        title = font.render("IvattGaze Experiment Menu", True, BLACK)
+        title = font.render("IvattGaze - A Third Year Project", True, BLACK)
         title_rect = title.get_rect(center=(screen.get_width() // 2, screen.get_height() // 4))
         screen.blit(title, title_rect)
 
@@ -277,6 +288,7 @@ def start_sandbox():
 
     show_landmarks  = False
     show_prediction = False
+    show_normalisation = False
 
     gaze_map = {0: "centre", 1: "left", 2: "right"}
 
@@ -287,7 +299,8 @@ def start_sandbox():
 
     landmark_button = pygame.Rect(left_col_x - BUTTON_WIDTH // 2, height // 2 - 120, BUTTON_WIDTH, BUTTON_HEIGHT)
     prediction_button = pygame.Rect(left_col_x - BUTTON_WIDTH // 2, height // 2 - 120 + 100, BUTTON_WIDTH, BUTTON_HEIGHT)
-    quit_button = pygame.Rect(left_col_x - BUTTON_WIDTH // 2, height // 2 - 120 + 200, BUTTON_WIDTH, BUTTON_HEIGHT)
+    normalisation_button = pygame.Rect(left_col_x - BUTTON_WIDTH // 2, height // 2 - 120 + 200, BUTTON_WIDTH, BUTTON_HEIGHT)
+    quit_button = pygame.Rect(left_col_x - BUTTON_WIDTH // 2, height // 2 - 120 + 300, BUTTON_WIDTH, BUTTON_HEIGHT)
 
     while True:
         ret, frame = capture.read()
@@ -306,10 +319,13 @@ def start_sandbox():
             face = frame_result.face_landmarks[0]
 
             if show_landmarks:
-                for point in face:
+                for i, point in enumerate(face):
                     px = int(point.x * camera_width) + camera_x
                     py = int(point.y * camera_height) + camera_y
-                    pygame.draw.circle(screen, (0, 200, 255), (px, py), 2)
+                    if i in landmarks:
+                        pygame.draw.circle(screen, (255, 0, 0), (px, py), 3)
+                    else:
+                        pygame.draw.circle(screen, (0, 255, 0), (px, py), 2)
 
             if show_prediction:
                 features = classifier.process_frame(frame)
@@ -318,18 +334,30 @@ def start_sandbox():
                     pred_text = font.render(f"Gaze: {gaze_map[pred]}", True, BLACK)
                     screen.blit(pred_text, pred_text.get_rect(center=(camera_x + camera_width // 2, camera_y + camera_height + 40)))
 
+            if show_normalisation:
+                features_norm = classifier.process_frame(frame)
+                if features_norm:
+                    features_text = font.render(f"Features: "f"{features_norm[0][0]:.2f}, "
+                                                f" {features_norm[0][1]:.2f}, "
+                                                f"{features_norm[0][2]:.2f}, "
+                                                f"{features_norm[0][3]:.2f}", True, BLACK)
+                    screen.blit(features_text, features_text.get_rect(center=(camera_x + camera_width // 2, camera_y + camera_height  - 700)))
+
         title = font.render("Sandbox", True, BLACK)
         screen.blit(title, title.get_rect(center=(left_col_x, height // 4)))
 
         mouse = pygame.mouse.get_pos()
         draw_button(landmark_button,"Landmarks", landmark_button.collidepoint(mouse))
         draw_button(prediction_button,"Prediction", prediction_button.collidepoint(mouse))
+        draw_button(normalisation_button, "Normalisation", normalisation_button.collidepoint(mouse))
         draw_button(quit_button,"Quit", quit_button.collidepoint(mouse))
 
         if show_landmarks:
             pygame.draw.rect(screen, (0, 180, 80), landmark_button, width=3, border_radius=8)
         if show_prediction:
             pygame.draw.rect(screen, (0, 180, 80), prediction_button, width=3, border_radius=8)
+        if show_normalisation:
+            pygame.draw.rect(screen, (0, 180, 80), normalisation_button, width=3, border_radius=8)
 
         pygame.display.update()
 
@@ -344,6 +372,8 @@ def start_sandbox():
                     show_landmarks = not show_landmarks
                 if prediction_button.collidepoint(mouse):
                     show_prediction = not show_prediction
+                if normalisation_button.collidepoint(mouse):
+                    show_normalisation = not show_normalisation
                 if quit_button.collidepoint(mouse):
                     return
 
