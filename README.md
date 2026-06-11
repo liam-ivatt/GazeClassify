@@ -27,19 +27,11 @@ IvattGaze provides utilities and example models for collecting eye-gaze data, ca
 ## Requirements
 
 - Python 3.8+ recommended
-- Typical dependencies: `numpy`, `pandas`, `opencv-python`, `scikit-learn`, and a deep-learning framework (PyTorch or TensorFlow) depending on the model implementations. If you have a `requirements.txt`, install from it:
+- Typical dependencies: `numpy`, `pandas`, `opencv-python`, `scikit-learn`, and a deep-learning framework (PyTorch or TensorFlow) depending on the model implementations. These can be installed from `requirements.txt`
 
 ```bash
 python -m pip install -r requirements.txt
 ```
-
-If no `requirements.txt` exists, install common packages:
-
-```bash
-python -m pip install numpy pandas opencv-python scikit-learn
-```
-
-Add `torch` or `tensorflow` if needed by the models.
 
 ## Quick Start
 
